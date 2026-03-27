@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" width="200" alt="SwagShot" />
+</p>
+
 # swagshot
 
 Swagger/OpenAPI 스펙으로 TypeScript API 함수와 타입 정의를 자동 생성하는 CLI 툴.
