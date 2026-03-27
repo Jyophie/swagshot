@@ -1,138 +1,87 @@
 # swagshot
 
-A Swagger/OpenAPI-powered API function and TypeScript type generator MCP server. Point it at your existing project, give it a Swagger URL, and it generates code that matches your project's patterns.
+Swagger/OpenAPI 스펙으로 TypeScript API 함수와 타입 정의를 자동 생성하는 CLI 툴.
 
-## What it does
+프로젝트 구조를 자동 감지해서 기존 코드 스타일에 맞는 코드를 생성합니다.
 
-swagshot analyzes your project structure to detect:
-- Where your API functions live (`src/api`, `src/services`, etc.)
-- Where your TypeScript types live (`src/types`, `src/models`, etc.)
-- Whether you use axios or fetch
-- Whether you have a custom axios instance
-- Whether you use react-query or SWR
+## 특징
 
-Then, given a Swagger/OpenAPI JSON URL, it generates:
-- **TypeScript interfaces** for all referenced schemas and query parameter types
-- **Typed API functions** that match your HTTP client style (axios or fetch)
+- **프로젝트 구조 자동 감지** — API 폴더, 타입 폴더, axios 인스턴스, react-query 등
+- **Swagger 2.0 / OpenAPI 3.0** 모두 지원 (Spring Boot, NestJS 등)
+- **axios / fetch** 스타일 코드 생성
+- **커스텀 axios 인스턴스** 자동 연결
+- deprecated 엔드포인트 자동 제외
 
-## Installation
-
-### Via npx (no install required)
+## 설치 없이 바로 사용
 
 ```bash
-npx swagshot
+npx swagshot <command>
 ```
 
-### Global install
+## 사용법
+
+### 1. 프로젝트 초기 설정 (처음 한 번만)
+
+프로젝트 루트에서 실행:
 
 ```bash
-npm install -g swagshot
+cd /your/project
+npx swagshot init
 ```
 
-## Claude Desktop Setup
+프로젝트 구조를 자동으로 감지하고 `.swagshot.json` 설정 파일을 생성합니다.
 
-Add swagshot to your Claude Desktop MCP config at `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```
+👋 swagshot 초기 설정을 시작합니다.
+📂 프로젝트 루트: /your/project
 
-```json
-{
-  "mcpServers": {
-    "swagshot": {
-      "command": "npx",
-      "args": ["-y", "swagshot"]
-    }
-  }
-}
+자동 감지 결과를 확인해주세요. Enter를 누르면 기본값 사용:
+
+Swagger JSON URL (기본값: ):
+API 함수 폴더 (기본값: src/api):
+타입 정의 폴더 (기본값: src/types):
+...
 ```
 
-Or if installed globally:
+### 2. 컨트롤러 목록 확인
 
-```json
-{
-  "mcpServers": {
-    "swagshot": {
-      "command": "swagshot"
-    }
-  }
-}
+```bash
+npx swagshot list --url "https://api.example.com/v2/api-docs"
 ```
 
-Restart Claude Desktop after editing the config.
+```
+📋 컨트롤러 태그 목록 (12개):
 
-## Usage
-
-### Step 1: Setup (run once per project)
-
-In a conversation with Claude, run:
-
-> "Use swagger_setup for my project at /path/to/my/project"
-
-Or simply:
-
-> "Run swagger_setup"
-
-(swagshot will use the current working directory)
-
-swagshot will auto-detect your project structure and create a `.swagshot.json` config file in your project root. Review the detected settings and correct anything wrong.
-
-### Step 2: Generate code
-
-> "Use swagger_sync with https://api.example.com/swagger.json"
-
-If your API has multiple controller tags, swagshot will list them and ask which one to generate. You can also specify:
-
-> "Use swagger_sync with https://api.example.com/swagger.json, tag: payment-controller"
-
-Or generate everything at once:
-
-> "Use swagger_sync with https://api.example.com/swagger.json, tag: all"
-
-### Updating config
-
-If swagshot detected the wrong directories or HTTP client:
-
-> "Use swagger_config_update to set apiDir to src/services"
-
-Or pass multiple updates at once:
-
-```json
-{ "apiDir": "src/services", "httpClient": "fetch" }
+  1. auth-controller
+  2. payment-controller
+  3. order-controller
+  ...
 ```
 
-## Config file (.swagshot.json)
+### 3. 코드 생성
 
-```json
-{
-  "version": "1",
-  "project": {
-    "root": "/path/to/project",
-    "apiDir": "src/api",
-    "typesDir": "src/types",
-    "hooksDir": "src/hooks",
-    "outputDir": "src/api"
-  },
-  "style": {
-    "httpClient": "axios",
-    "axiosInstance": "src/lib/axios.ts",
-    "queryLibrary": "react-query",
-    "namingConvention": "camelCase"
-  }
-}
+```bash
+# 특정 컨트롤러만
+npx swagshot generate --url "https://api.example.com/v2/api-docs" --tag payment-controller
+
+# 전체 생성
+npx swagshot generate --url "https://api.example.com/v2/api-docs" --all
+
+# deprecated 포함
+npx swagshot generate --url "https://api.example.com/v2/api-docs" --tag payment-controller --include-deprecated
 ```
 
-| Field | Description |
-|-------|-------------|
-| `project.apiDir` | Where API functions are stored |
-| `project.typesDir` | Where TypeScript types are stored |
-| `project.hooksDir` | Where query hooks are stored (optional) |
-| `project.outputDir` | Where generated API files are written (defaults to apiDir) |
-| `style.httpClient` | `"axios"` or `"fetch"` |
-| `style.axiosInstance` | Path to your custom axios instance file (optional) |
-| `style.queryLibrary` | `"react-query"`, `"swr"`, or `null` |
-| `style.namingConvention` | `"camelCase"` or `"snake_case"` |
+### 4. 설정 변경
 
-## Generated output example
+```bash
+npx swagshot config set apiDir src/services
+npx swagshot config set httpClient fetch
+npx swagshot config set axiosInstance src/lib/fetcher.ts
+```
 
-Given a Swagger tag `payment-controller`, swagshot generates:
+## 생성 결과 예시
+
+`payment-controller` 기준으로 두 파일이 생성됩니다.
 
 **`src/types/payment.ts`**
 ```typescript
@@ -140,16 +89,17 @@ Given a Swagger tag `payment-controller`, swagshot generates:
 // Tag: payment-controller
 // Do not edit manually
 
-export interface PaymentDto {
+export interface PaymentHistoryResponse {
   id: number;
-  amount: number;
+  price: number;
   status: string;
+  createdAt: string;
 }
 
-export interface GetPaymentsParams {
-  page?: number;
-  size?: number;
-  status?: string;
+export interface GetHistoryUsingGETParams {
+  startDateTime: string;
+  endDateTime: string;
+  payment_product_types?: string[];
 }
 ```
 
@@ -159,43 +109,72 @@ export interface GetPaymentsParams {
 // Tag: payment-controller
 // Do not edit manually
 
-import api from '../lib/axios';
-import type { PaymentDto, GetPaymentsParams } from '../types/payment';
+import fetcher from '../lib/fetcher';
+import type { PaymentHistoryResponse, GetHistoryUsingGETParams } from '../types/payment';
 
-/** List all payments */
-export const getPayments = (params: GetPaymentsParams) =>
-  api.get<PaymentDto[]>(`/api/payments`, { params });
+/** 결제 히스토리 조회 */
+export const getHistory = (params: GetHistoryUsingGETParams) =>
+  fetcher.get<PaymentHistoryResponse[]>(`/v2/payments/history`, { params });
 
-/** Get payment by ID */
-export const getPaymentById = (id: number) =>
-  api.get<PaymentDto>(`/api/payments/${id}`);
-
-/** Create a new payment */
-export const createPayment = (data: CreatePaymentDto) =>
-  api.post<PaymentDto>(`/api/payments`, data);
+/** 결제 히스토리 상세 조회 */
+export const getPaymentHistory = (paymentHistoryId: number) =>
+  fetcher.get<PaymentHistoryResponse>(`/v2/payments/history/${paymentHistoryId}`);
 ```
 
-## Development
-
-```bash
-git clone https://github.com/yourname/swagshot
-cd swagshot
-npm install
-npm run build
-npm start
-```
-
-For local development with Claude Desktop, use an absolute path:
+## 설정 파일 (.swagshot.json)
 
 ```json
 {
-  "mcpServers": {
-    "swagshot": {
-      "command": "node",
-      "args": ["/path/to/swagshot/dist/index.js"]
-    }
+  "version": "1",
+  "project": {
+    "root": "/your/project",
+    "apiDir": "src/api",
+    "typesDir": "src/types",
+    "hooksDir": null,
+    "outputDir": "src/api"
+  },
+  "style": {
+    "httpClient": "axios",
+    "axiosInstance": "src/lib/fetcher.ts",
+    "queryLibrary": "react-query",
+    "namingConvention": "camelCase"
+  },
+  "swagger": {
+    "url": "https://api.example.com/v2/api-docs"
   }
 }
+```
+
+> `.swagshot.json`은 `.gitignore`에 추가를 권장합니다.
+
+## Swagger JSON URL 찾는 법
+
+Swagger UI 페이지 URL이 아닌, JSON 스펙 URL이 필요합니다.
+
+| 프레임워크 | JSON URL 패턴 |
+|-----------|--------------|
+| Spring Boot (springfox) | `/v2/api-docs` |
+| Spring Boot (springdoc) | `/v3/api-docs` |
+| NestJS | `/api-json` |
+
+## 전체 커맨드
+
+```bash
+npx swagshot init                          # 프로젝트 초기 설정
+npx swagshot list --url <url>              # 컨트롤러 목록 조회
+npx swagshot generate --url <url> --tag <tag>   # 특정 컨트롤러 생성
+npx swagshot generate --url <url> --all    # 전체 생성
+npx swagshot config set <key> <value>      # 설정 변경
+```
+
+## 개발 환경 설정
+
+```bash
+git clone https://github.com/Jyophie/swagshot.git
+cd swagshot
+npm install
+npm run build
+node dist/cli/index.js --help
 ```
 
 ## License
