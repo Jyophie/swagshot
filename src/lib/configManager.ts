@@ -39,7 +39,7 @@ export async function updateConfig(
   updates: Record<string, string | null>
 ): Promise<SwagShotConfig> {
   const config = await readConfig(root);
-  if (!config) throw new Error("설정 파일이 없습니다. swagger_setup을 먼저 실행하세요.");
+  if (!config) throw new Error("설정 파일이 없습니다. 'swagshot init'을 먼저 실행하세요.");
 
   for (const [key, value] of Object.entries(updates)) {
     if (key in config.project) {
