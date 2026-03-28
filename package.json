@@ -1,6 +1,6 @@
 {
   "name": "swagshot",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Swagger-powered API & type generator",
   "main": "dist/cli/index.js",
   "bin": {
